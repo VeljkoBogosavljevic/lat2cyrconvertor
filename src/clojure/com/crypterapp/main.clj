@@ -1,0 +1,227 @@
+(ns com.crypterapp.main
+  (:use [neko.activity]
+        [neko.threading :only [on-ui]]
+        [neko.ui :only [make-ui]]
+        [neko.notify]
+        [neko.action-bar])
+  (:import android.widget.EditText
+           android.content.Intent
+           android.widget.Toast)
+  (:require [com.crypterapp.data :as data]))
+
+(declare android.widget.LinearLayout mylayout)
+(declare android.widget.LinearLayout homel2clayout)
+(declare android.widget.LinearLayout homec2llayout)
+(declare android.widget.LinearLayout historylayout)
+(declare exit-application login-notification login-attempt login change-layout set-tabs set-conversion-layout show-history)
+
+(defn mt-text [] (atom ""))
+(defn hs-text [] (atom ""))
+(defn now [] (new java.util.Date))
+
+(def text (mt-text))
+(def history-text (hs-text))
+
+(def main-layout [:linear-layout {:orientation :vertical
+                                  :gravity :center
+                                  :id-holder true
+                                  :def `mylayout}
+                  [:edit-text {:hint "Username"
+                               :id ::username}]
+                  [:edit-text {:hint "Password"
+                               :id ::password}]
+                  [:linear-layout {:orientation :horizontal
+                                  :gravity :center
+                                  :id-holder true}
+                   [:button {:text "Login"
+                             :on-click (fn [_] (login))}]
+                   [:button {:text "Exit"
+                             :on-click (fn [_] (exit-application))}]]
+                  [:text-view {:text @text
+                               :text-size [12 :dp]
+                               :id ::loginNoticifation}]])
+
+(def home-l2c-layout [:linear-layout {:orientation :vertical
+                                  :gravity :center
+                                  :id-holder true
+                                  :def `homel2clayout}
+                  [:text-view {:text "Welcome"
+                               :text-size [18 :dp]
+                               :id ::l2cwelcome}]
+                   [:text-view { :text "Enter latin text to convert:"
+                                :text-size [15 :dp]}]
+                   [:edit-text {:hint "Latin"
+                                :layout-width :fill
+                                ;:layout-height :match
+                                :id ::l2clatin}]
+                  [:edit-text {:hint "Cyrillic"
+                                :layout-width :fill
+                                ;:layout-height :match
+                                :id ::l2ccyrillic}]
+                  [:linear-layout {:orientation :horizontal
+                                  :gravity :center
+                                  :id-holder true}
+                   [:button {:text "Convert"
+                             ;:on-click ()
+                             }]
+                   [:button {:text "Exit"
+                             :on-click (fn [_] (exit-application))}]] 
+                 ])
+
+(def home-c2l-layout [:linear-layout {:orientation :vertical
+                                  :gravity :center
+                                  :id-holder true
+                                  :def `homec2llayout}
+                  [:text-view {:text "Welcome"
+                               :text-size [18 :dp]
+                               :id ::c2lwelcome}]
+                   [:text-view {:text "Enter cyrillic text to convert:"
+                                :text-size [15 :dp]}]
+                   [:edit-text {:hint "Cyrillic"
+                                :layout-width :fill
+                                ;:layout-height [60 :dp]
+                                :id ::c2lcyrillic}]
+                  [:edit-text {:hint "Latin"
+                                :layout-width :fill
+                               ;:layout-height [60 :dp]
+                                :id ::c2llatin}]
+                  [:linear-layout {:orientation :horizontal
+                                  :gravity :center
+                                  :id-holder true}
+                   [:button {:text "Convert"
+                             ;:on-click ()
+                             }]
+                   [:button {:text "Exit"
+                             :on-click (fn [_] (exit-application))}]]  
+                 ])
+
+(def history-layout2 [:linear-layout {:orientation :vertical
+                                  :gravity :center
+                                  :id-holder true
+                                  :def `historylayout}
+                      
+                      [:text-view {:text "History: \n"
+                                :text-size [15 :dp]}]
+                      [:text-view {:text "---"
+                               :text-size [12 :dp]
+                               :id ::historyview}]
+                      [:linear-layout {:orientation :horizontal
+                                  :gravity :center
+                                  :id-holder true}
+                   [:button {:text "Show"
+                             :on-click (fn [_] (show-history)) ; to be commented
+                             }]
+                   [:button {:text "Exit"
+                             :on-click (fn [_] (exit-application))}]]])
+
+
+;(def home-layout [:linear-layout {:orientation :vertical
+;                                  :gravity :center
+;                                  :id-holder true
+;                                  :def `homelayout}
+;                  [:text-view {:text "Welcome"
+;                               :text-size [18 :dp]
+;                               :id ::welcome}]
+;                  [:button {:text "Convertor"
+;                             :on-click (fn [_] (set-conversion-layout))}]    
+;                 ])
+;(def back-layout [:linear-layout {:orientation :vertical
+;                                  :gravity :bottom ;flag
+;                                  :id-holder true
+;                                  :def `backlayout}
+;                  [:button {:text "Back"
+;                             :on-click (fn [_] (change-layout home-layout))}]    
+;                 ])
+
+
+
+(defactivity com.crypterapp.MainActivity
+  :def a
+  :on-create
+  (fn [this bundle]
+    (on-ui
+     (set-content-view! a
+      (make-ui main-layout)))))
+
+(defn get-element [element layout]
+  (str (.getText (element (.getTag layout)))))
+
+(defn set-element [element s layout]
+  (on-ui (.setText (element (.getTag layout)) s)))
+
+
+(defn update-ui []
+  (set-element ::loginNoticifation @text mylayout))
+
+(defn login-attempt []
+  (reset! text (str "Login failure ! Time: " (.format (java.text.SimpleDateFormat. "dd/MM/yyyy hh:mm:ss") (now)) "\n") )
+  (update-ui))
+
+ (defn login-notification []
+  (fire :mynotification
+      (notification :icon com.crypterapp.R$drawable/ic_launcher
+                    :ticker-text "Crypter - Login successful !"
+                    :content-title "Crypter"
+                    :content-text "Login successful !"
+                    :action [:activity Intent/CATEGORY_HOME])))
+ 
+ (defn login []
+   (if (= (@data/user-main :username) (get-element ::username mylayout))
+     (if (= (@data/user-main :password) (get-element ::password mylayout))
+       (do (login-notification) (set-tabs))
+       (login-attempt))
+     (login-attempt)))
+
+ (defn change-layout [layout]
+   (on-ui
+     (set-content-view! a
+      (make-ui layout))))
+ 
+ (defn make-history [s]
+   (if (not (empty? s))
+   (do
+   (swap! history-text str "Latin: " ((first s) :lat) " - Cyrillic: " ((first s) :cyr) "\n")
+   (recur (rest s)))))
+ 
+ (defn reset-history []
+   (reset! history-text ""))
+ 
+ (defn show-history []
+   (do (reset-history)
+     (make-history @data/history)
+     (set-element ::historyview @history-text historylayout)))
+ 
+ (defn set-tabs[]
+ (on-ui
+  (neko.action-bar/setup-action-bar a
+  {:title "crypterapp"
+   :navigation-mode :tabs
+   :display-options [:show-home :show-title :home-as-up]
+   :subtitle "convertor"
+   :tabs [
+          [:tab {:text "Latin > Cyrillic"
+                  :tab-listener (tab-listener
+                                 :on-tab-selected (fn [tab fn]
+                                                    (change-layout home-l2c-layout) ))}]
+           [:tab {:text "Cyrillic > Latin"
+                  :tab-listener (tab-listener
+                                 :on-tab-selected (fn [tab ft]
+                                                     (change-layout home-c2l-layout)))}]
+           [:tab {:text "History"
+                  :tab-listener (tab-listener
+                                 :on-tab-selected (fn [tab ft]
+                                                     (do (change-layout history-layout2) (show-history))))}]
+           ]})))
+ 
+ 
+;(defn set-conversion-layout []
+;  (do (change-layout back-layout)
+;    (set-tabs)))
+
+(defn exit-application []
+  (.finish a))
+
+
+
+; (exit-application)
+; (.startActivity a (.getIntent a))
