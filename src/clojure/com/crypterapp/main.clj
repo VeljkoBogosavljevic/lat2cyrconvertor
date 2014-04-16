@@ -13,7 +13,8 @@
 (declare android.widget.LinearLayout homel2clayout)
 (declare android.widget.LinearLayout homec2llayout)
 (declare android.widget.LinearLayout historylayout)
-(declare exit-application login-notification login-attempt login change-layout set-tabs set-conversion-layout show-history)
+(declare android.widget.LinearLayout changeuserlayout)
+(declare exit-application login-notification login-attempt login change-layout set-tabs set-conversion-layout show-history change-credentials)
 
 (defn mt-text [] (atom ""))
 (defn hs-text [] (atom ""))
@@ -95,44 +96,50 @@
                              :on-click (fn [_] (exit-application))}]]  
                  ])
 
-(def history-layout2 [:linear-layout {:orientation :vertical
+(def history-layout [:linear-layout {:orientation :vertical
                                   :gravity :center
                                   :id-holder true
                                   :def `historylayout}
                       
-                      [:text-view {:text "History: \n"
+                     [:text-view {:text "History: \n"
                                 :text-size [15 :dp]}]
-                      [:text-view {:text "---"
+                     [:text-view {:text "---"
                                :text-size [12 :dp]
                                :id ::historyview}]
-                      [:linear-layout {:orientation :horizontal
+                     [:linear-layout {:orientation :horizontal
                                   :gravity :center
                                   :id-holder true}
-                   [:button {:text "Show"
-                             :on-click (fn [_] (show-history)) ; to be commented
-                             }]
+;                   [:button {:text "Show"
+;                             :on-click (fn [_] (show-history)) ; to be commented
+;                             }]
                    [:button {:text "Exit"
                              :on-click (fn [_] (exit-application))}]]])
 
-
-;(def home-layout [:linear-layout {:orientation :vertical
-;                                  :gravity :center
-;                                  :id-holder true
-;                                  :def `homelayout}
-;                  [:text-view {:text "Welcome"
-;                               :text-size [18 :dp]
-;                               :id ::welcome}]
-;                  [:button {:text "Convertor"
-;                             :on-click (fn [_] (set-conversion-layout))}]    
-;                 ])
-;(def back-layout [:linear-layout {:orientation :vertical
-;                                  :gravity :bottom ;flag
-;                                  :id-holder true
-;                                  :def `backlayout}
-;                  [:button {:text "Back"
-;                             :on-click (fn [_] (change-layout home-layout))}]    
-;                 ])
-
+(def change-user-layout  [:linear-layout {:orientation :vertical
+                                  :gravity :center
+                                  :id-holder true
+                                  :def `changeuserlayout}
+                          [:text-view {:text "Current username:"
+                               :text-size [12 :dp]
+                               :id ::changeuserutxtusername}]
+                          [:text-view {:text "Current password:"
+                               :text-size [12 :dp]
+                               :id ::changeusertxtpassword}]
+                          [:text-view {:text "\nChange user credentials: \n"
+                                :text-size [15 :dp]}]
+                          [:edit-text {:hint "Username"
+                               :id ::changeuserusername}]
+                          [:edit-text {:hint "Password"
+                               :id ::changeuserpassword}]
+                          [:linear-layout {:orientation :horizontal
+                                  :gravity :center
+                                  :id-holder true}
+                           [:button {:text "Change"
+                                     :on-click (fn [_] (change-credentials))
+                                     }]
+                           [:button {:text "Exit"
+                                     :on-click (fn [_] (exit-application))}]]
+                          ])
 
 
 (defactivity com.crypterapp.MainActivity
@@ -191,6 +198,15 @@
      (make-history @data/history)
      (set-element ::historyview @history-text historylayout)))
  
+ (defn set-current-user []
+   (do (set-element ::changeuserutxtusername (str "Current username: "(data/get-username @data/user-main)) changeuserlayout))
+    (set-element ::changeusertxtpassword (str "Current password: "(data/get-password @data/user-main)) changeuserlayout))
+ 
+ (defn change-credentials []
+   (do (data/update-user (get-element ::changeuserusername changeuserlayout) (get-element ::changeuserpassword changeuserlayout))
+     (exit-application)
+     (.startActivity a (.getIntent a))))
+ 
  (defn set-tabs[]
  (on-ui
   (neko.action-bar/setup-action-bar a
@@ -210,18 +226,23 @@
            [:tab {:text "History"
                   :tab-listener (tab-listener
                                  :on-tab-selected (fn [tab ft]
-                                                     (do (change-layout history-layout2) (show-history))))}]
+                                                     (do (change-layout history-layout) (show-history))))}]
+           [:tab {:text "User"
+                  :tab-listener (tab-listener
+                                 :on-tab-selected (fn [tab ft]
+                                                     (do (change-layout change-user-layout) (set-current-user)) ))}]
            ]})))
  
  
-;(defn set-conversion-layout []
-;  (do (change-layout back-layout)
-;    (set-tabs)))
+
 
 (defn exit-application []
   (.finish a))
 
 
+;(defn set-conversion-layout []
+;  (do (change-layout back-layout)
+;    (set-tabs)))
 
 ; (exit-application)
 ; (.startActivity a (.getIntent a))
